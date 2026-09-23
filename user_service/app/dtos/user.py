@@ -32,13 +32,19 @@ class UserProfileResponseDTO(BaseModel):
     country: str | None = None
     
 class LoginDTO(BaseModel):
+    is_guest: bool = False
     nickname:str | None
     email:EmailStr | None
     password:str
+
+class LoginResponseDTO(BaseModel):
+    status_code:int = Field(ge=200, lt=300)
+    code:str
+    access_token:str
     
 class UserResponseDTO(BaseModel):
-    code:int = Field(ge=200, lt=300)
-    status:str
+    status_code:int = Field(ge=200, lt=300)
+    code:str
 
     
 

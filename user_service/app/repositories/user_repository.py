@@ -22,8 +22,8 @@ class UserRepository:
         
         return self.db.scalar(statement)
     
-    def get_by_nickname(self, nichname: str) -> User | None:
-        statement = select(User).where(User.nickname == nichname)
+    def get_by_nickname(self, nickname: str) -> User | None:
+        statement = select(User).where(User.nickname == nickname)
         
         return self.db.scalar(statement)
     
