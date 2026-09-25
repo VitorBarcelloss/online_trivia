@@ -43,7 +43,6 @@ class LoginResponseDTO(BaseModel):
     access_token:str
     
 class UserResponseDTO(BaseModel):
-    status_code:int = Field(ge=200, lt=300)
     code:str
 
     

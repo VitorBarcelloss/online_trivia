@@ -1,4 +1,4 @@
-from app.dtos.user import CreateUserDTO, LoginDTO, LoginResponseDTO, UserResponseDTO
+from app.dtos.user import CreateUserDTO, UserResponseDTO, UserProfileResponseDTO, UpdateUserDTO, UpdateUserPasswordDTO
 import re
 
 from user_service.app.core.exceptions import ServiceErrorMessage, UserException
@@ -16,7 +16,7 @@ class UserService:
     def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
     
-    def create_user_service(self,request_dto:CreateUserDTO):
+    def create_user_service(self,request_dto:CreateUserDTO) -> UserResponseDTO:
         password_pattern = r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^\w\s]).{8,}$"
         raw_password = request_dto.password
         
@@ -49,45 +49,106 @@ class UserService:
         self.user_repository.db.commit()
         
         return UserResponseDTO(
-            status_code=201,
             code="USER_CREATED",
         )
+
         
-    def login_service(self, request_dto: LoginDTO):
-        email = request_dto.email
-        nickname = request_dto.nickname
-        password = request_dto.password 
-        is_guest = request_dto.is_guest | False
-        
-        if nickname and is_guest:
-            access_token = Security.encode_token(uuid.uuid4(), nickname, is_guest)
-                    
-            return LoginResponseDTO(
-                status_code=200,
-                code="GUEST_LOGIN_SUCCESS",
-                access_token=access_token
-            )
-        
-        user = (
-            self.user_repository.get_by_email(email) 
-            if email else self.user_repository.get_by_nickname(nickname)
-            )
+    def user_profile_service(self, user_id: uuid.UUID) -> UserProfileResponseDTO:
+        user = self.user_repository.get_by_id(user_id)
         
         if not user:
-            raise UserException(ServiceErrorMessage.INVALID_USERNAME)
+            raise UserException(ServiceErrorMessage.USER_DOES_NOT_EXISTS)
         
-        verified_password = Security.verify_password(password, user.password_hash)
-        
-        if not verified_password:
-            raise UserException(ServiceErrorMessage.INVALID_PASSWORD)
-        
-        access_token = Security.encode_token(user.id, user.nickname, is_guest)
-        
-        return LoginResponseDTO(
-            status_code=200,
-            code="LOGIN_SUCCESS",
-            access_token=access_token
+        user_dto = UserProfileResponseDTO(
+            nickname=user.nickname,
+            name=user.name,
+            email=user.email,
+            phone=user.phone,
+            birth_date=user.birth_date,
+            country=user.country
         )
+        
+        return user_dto
+    
+    def update_user_service(
+        self, 
+        request_dto: UpdateUserPasswordDTO | UpdateUserDTO, 
+        user_id: uuid.UUID
+        ) -> UserResponseDTO:
+        
+        request_type = request_dto.dto_type
+        
+        match request_type:
+            case "update_general_info":
+                data = request_dto.model_dump(exclude_unset=True)
+                
+                user = self.user_repository.get_by_id(user_id)
+                
+                if not user:
+                    raise UserException(ServiceErrorMessage.USER_DOES_NOT_EXIST)
+
+                old_updated_at = user.updated_at
+                
+                if "phone" in data:
+                    data["phone"] = self.format_phone_number(data["phone"])
+                
+                for field, value in data.items():
+                    setattr(user, field, value)
+                
+                user = self.user_repository.update(user)
+                
+                if user.updated_at == old_updated_at:
+                    self.user_repository.db.rollback()
+                    raise UserException(ServiceErrorMessage.USER_UPDATE_FAILED)
+                
+                self.user_repository.db.commit()
+                
+                return UserResponseDTO(
+                        code="USER_UPDATED",
+                    )                
+                
+            case "update_password":
+                user = self.user_repository.get_by_id(user_id)
+                                
+                if not user:
+                    raise UserException(ServiceErrorMessage.USER_DOES_NOT_EXIST)
+                
+                old_updated_at = user.updated_at
+                old_password_hash = user.password_hash
+                old_password = request_dto.old_password
+                
+                if request_dto.new_password != request_dto.confirm_password:
+                    raise UserException(ServiceErrorMessage.PASSWORD_CONFIRMATION_MISMATCH)
+                
+                verified_password = Security.verify_password(old_password, old_password_hash)
+                
+                if not verified_password:
+                    raise UserException(ServiceErrorMessage.INVALID_PASSWORD)
+                
+                new_password_hash = Security.hash_password(request_dto.new_password)
+                
+                if new_password_hash == old_password_hash:
+                    raise UserException(ServiceErrorMessage.INVALID_PASSWORD)
+                
+                user.password_hash = new_password_hash
+                
+                user = self.user_repository.update(user)
+                                
+                if user.updated_at == old_updated_at or (new_password_hash == old_password_hash):
+                    self.user_repository.db.rollback()
+                    raise UserException(ServiceErrorMessage.USER_UPDATE_FAILED)
+                
+                self.user_repository.db.commit()
+                
+                return UserResponseDTO(
+                        code="USER_UPDATED",
+                    )                
+                
+            case _:
+                raise UserException(ServiceErrorMessage.INVALID_UPDATE_REQUEST_TYPE)
+            
+        
+        
 
     @staticmethod
     def format_phone_number(phone_number: str, country_code: str = "BR") -> str:

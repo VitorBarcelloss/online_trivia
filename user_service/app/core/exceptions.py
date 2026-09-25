@@ -48,6 +48,42 @@ class ServiceErrorMessage:
         code="INVALID_PASSWORD",
         message="Invalid password, please check if the password is correct.",
     )
+    
+    USER_DOES_NOT_EXIST = ErrorMessage(
+        status_code=404,
+        code="USER_DOES_NOT_EXIST",
+        message="User does not exist, please check if the user is registered.",
+    )
+    
+    INVALID_UPDATE_REQUEST_TYPE = ErrorMessage(
+        status_code=400,
+        code="INVALID_UPDATE_REQUEST_TYPE",
+        message="Invalid update request type, only use allowed types.",
+    )
+    
+    USER_UPDATE_FAILED = ErrorMessage(
+        status_code=500,
+        code="USER_UPDATE_FAILED",
+        message="User update failed, please try again later.",
+    )
+    
+    PASSWORD_CONFIRMATION_MISMATCH = ErrorMessage(
+        status_code=400,
+        code="PASSWORD_CONFIRMATION_MISMATCH",
+        message="Password confirmation does not match the new password.",
+    )
+    
+    AUTH_FAILED = ErrorMessage(
+        status_code=401,
+        code="AUTH_FAILED",
+        message="Authentication failed, please check if the credentials are correct.",
+    )
+
+    TOKEN_EXPIRED = ErrorMessage(
+        status_code=401,
+        code="TOKEN_EXPIRED",
+        message="Token expired, please login again.",
+    )
 
 class UserException(Exception):
     def __init__(self, error: ErrorMessage):
