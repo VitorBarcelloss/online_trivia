@@ -38,12 +38,12 @@ class Security:
         
         if user_id == None or not isinstance(user_id, str):
             raise UserException(SecurityErrorMessage.INVALID_USER_TOKEN)
-
+            
         try:
-            user_id = UUID(user_id)
+            UUID(user_id)
         except ValueError as exc:
             raise UserException(SecurityErrorMessage.INVALID_USER_TOKEN) from exc
-
+        
         return {
             "user_id": user_id, 
             "is_logged": is_logged,
