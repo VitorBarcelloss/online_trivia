@@ -17,24 +17,37 @@ def create_room(request_dto: CreateRoomDTO, host_id: UUID) -> RoomResponseDTO:
 
 
 @room_router.get("/public", response_model=list[RoomResponseDTO])
-def list_public_rooms() -> list[RoomResponseDTO]: ...
-
+def list_public_rooms() -> list[RoomResponseDTO]: 
+    room_repository = RoomRepository()
+    room_service = RoomService(room_repository)
+    return room_service.list_public_rooms_service()
 
 @room_router.get("/{room_code}", response_model=RoomResponseDTO)
-def get_room(room_code: str, player_id: UUID) -> RoomResponseDTO: ...
-
+def get_room(room_code: str) -> RoomResponseDTO:
+    room_repository = RoomRepository()
+    room_service = RoomService(room_repository)
+    return room_service.get_room_service(room_code)
 
 @room_router.post("/{room_code}/join", response_model=RoomResponseDTO)
 def join_room(
 	room_code: str,
 	request_dto: JoinRoomDTO,
 	player_id: UUID,
-) -> RoomResponseDTO: ...
+) -> RoomResponseDTO:
+    room_repository = RoomRepository()
+    room_service = RoomService(room_repository)
+    return room_service.join_room_service(room_code, request_dto, player_id)
 
 
 @room_router.post("/{room_code}/leave", response_model=RoomResponseDTO)
-def leave_room(room_code: str, player_id: UUID) -> RoomResponseDTO: ...
+def leave_room(room_code: str, player_id: UUID) -> RoomResponseDTO:
+    room_repository = RoomRepository()
+    room_service = RoomService(room_repository)
+    return room_service.leave_room_service(room_code, player_id)
 
 
 @room_router.post("/{room_code}/start", response_model=RoomResponseDTO)
-def start_game(room_code: str, player_id: UUID) -> RoomResponseDTO: ...
+def start_game(room_code: str, player_id: UUID) -> RoomResponseDTO: 
+    room_repository = RoomRepository()
+    room_service = RoomService(room_repository)
+    return room_service.start_game_service(room_code, player_id)

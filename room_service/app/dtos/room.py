@@ -21,6 +21,7 @@ class JoinRoomDTO(BaseModel):
 
 
 class RoomResponseDTO(BaseModel):
+	id: UUID
 	code: str
 	host_id: UUID
 	package_id: int
