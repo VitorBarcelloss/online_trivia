@@ -1,11 +1,21 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-	app_name: str
-	debug: bool
-	redis_url: str
-	jwt_secret: str
+    app_name: str = "room-service"
+    debug: bool = False
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    room_code_length: int = 6
+    room_code_alphabet: str = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    room_ttl: int = 3600
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
-settings: Settings
+settings = Settings()

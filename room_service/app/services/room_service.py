@@ -1,5 +1,5 @@
 from uuid import UUID, uuid4
-import secrets
+from app.core.config import settings
 
 from app.core.security import Security
 
@@ -28,7 +28,7 @@ class RoomService:
 				f"room:code:{room_code}",
 				room_id,
 				nx=True,
-				ex=3600, #TODO colocar env pra ROOM_TTL
+				ex=settings.room_ttl
 			)
 
 			if success:
@@ -51,7 +51,7 @@ class RoomService:
   
 		await redis.expire(
       		f"room:{room_id}", 
-        	3600, #TODO colocar env pra ROOM_TTL
+        	settings.room_ttl,
 		)
   
 		return self.create_room_response_dto(configured_room)

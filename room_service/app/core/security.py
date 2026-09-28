@@ -1,12 +1,12 @@
 
 import secrets
-
+from app.core.config import settings
 from pwdlib import PasswordHash
 
 class Security:
     def __init__(self):
-        self.room_code_length = 6  
-        self.room_code_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        self.room_code_length = settings.room_code_length
+        self.room_code_alphabet = settings.room_code_alphabet
         self.password_hasher = PasswordHash.recommended()   
 
     def generate_room_code(self) -> str:
