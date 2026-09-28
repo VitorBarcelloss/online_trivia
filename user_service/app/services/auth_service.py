@@ -17,7 +17,7 @@ class AuthService:
         is_guest = request_dto.is_guest | False
         
         if nickname and is_guest:
-            access_token, refresh_token = Security.encode_token(uuid.uuid4(), nickname, is_guest)
+            access_token, refresh_token = Security().encode_token(uuid.uuid4(), nickname, is_guest)
                     
             return LoginResponseDTO(
                 status_code=200,
@@ -25,6 +25,9 @@ class AuthService:
                 access_token=access_token,
                 refresh_token=refresh_token
             )
+
+        if not password:
+            raise UserException(ServiceErrorMessage.MISSING_PASSWORD)
         
         user = (
             self.user_repository.get_by_email(email) 
@@ -34,12 +37,12 @@ class AuthService:
         if not user:
             raise UserException(ServiceErrorMessage.INVALID_USERNAME)
         
-        verified_password = Security.verify_password(password, user.password_hash)
+        verified_password = Security().verify_password(password, user.password_hash)
         
         if not verified_password:
             raise UserException(ServiceErrorMessage.INVALID_PASSWORD)
         
-        access_token, refresh_token = Security.encode_token(user.id, user.nickname, is_guest)
+        access_token, refresh_token = Security().encode_token(user.id, user.nickname, is_guest)
         
         return LoginResponseDTO(
             status_code=200,
@@ -63,16 +66,20 @@ class AuthService:
         if access_type != "refresh":
             raise UserException(ServiceErrorMessage.AUTH_FAILED)
         
-        if expires_at > datetime.now():
+        if expires_at <= datetime.datetime.now(datetime.timezone.utc):
             raise UserException(ServiceErrorMessage.TOKEN_EXPIRED)
         
         user = self.user_repository.get_by_id(user_id)
         
         if not user:
             raise UserException(ServiceErrorMessage.USER_DOES_NOT_EXIST)
+
+        access_token, refresh_token = Security().encode_token(user.id, user.nickname)
         
         return RefreshResponseDTO(
             status_code=200,
-            code="REFRESH_AUTH_SUCCEDED"
+            code="REFRESH_AUTH_SUCCEDED",
+            access_token=access_token,
+            refresh_token=refresh_token,
         )
             

@@ -8,7 +8,7 @@ class CreateUserDTO(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6, max_length=20)
     phone: str | None = None
-    birthdate: date | None = None
+    birth_date: date | None = None
     country: str | None = None
 
 class UpdateUserDTO(BaseModel):
@@ -28,7 +28,7 @@ class UserProfileResponseDTO(BaseModel):
     name:str
     email: EmailStr
     phone: str | None = None
-    birthdate: date | None = None
+    birth_date: date | None = None
     country: str | None = None
     
 class LoginDTO(BaseModel):

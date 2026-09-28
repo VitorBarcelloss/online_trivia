@@ -1,15 +1,17 @@
+import datetime
+
 from app.dtos.user import CreateUserDTO, UserResponseDTO, UserProfileResponseDTO, UpdateUserDTO, UpdateUserPasswordDTO
 import re
 
-from user_service.app.core.exceptions import ServiceErrorMessage, UserException
-from user_service.app.core.security import Security
+from app.core.exceptions import ServiceErrorMessage, UserException
+from app.core.security import Security
 import uuid
 
 import phonenumbers
 from phonenumbers import PhoneNumberFormat
 
-from user_service.app.models.user import User
-from user_service.app.repositories.user_repository import UserRepository
+from app.models.user import User
+from app.repositories.user_repository import UserRepository
 
 class UserService:
     
@@ -23,7 +25,7 @@ class UserService:
         if not re.match(password_pattern, raw_password):
             raise UserException(ServiceErrorMessage.INVALID_PASSWORD_PATTERN)
         
-        password_hash = Security.hash_password(raw_password)
+        password_hash = Security().hash_password(raw_password)
         user_id = uuid.uuid4()
         
         if request_dto.phone:
@@ -36,8 +38,8 @@ class UserService:
             email=request_dto.email,
             password_hash=password_hash,
             phone=formatted_phone if request_dto.phone else None,
-            birth_date=request_dto.birth_date | None,
-            country=request_dto.country | None,
+            birth_date=request_dto.birth_date or None,
+            country=request_dto.country or None,
         )
         
         self.user_repository.create(user)
@@ -53,8 +55,17 @@ class UserService:
         )
 
         
-    def user_profile_service(self, user_id: uuid.UUID) -> UserProfileResponseDTO:
-        user = self.user_repository.get_by_id(user_id)
+    def user_profile_service(self, user_info: dict) -> UserProfileResponseDTO:
+        if user_info["access_type"] != "access":
+            raise UserException(ServiceErrorMessage.TOKEN_NOT_ALLOWED)
+
+        if user_info['is_logged'] == False:
+            raise UserException(ServiceErrorMessage.USER_NOT_LOGGED)
+
+        if user_info["expires_at"] < datetime.datetime.now(datetime.timezone.utc):
+            raise UserException(ServiceErrorMessage.USER_TOKEN_EXPIRED)
+
+        user = self.user_repository.get_by_id(user_info['user_id'])
         
         if not user:
             raise UserException(ServiceErrorMessage.USER_DOES_NOT_EXISTS)
@@ -73,8 +84,14 @@ class UserService:
     def update_user_service(
         self, 
         request_dto: UpdateUserPasswordDTO | UpdateUserDTO, 
-        user_id: uuid.UUID
+        user_info: dict
         ) -> UserResponseDTO:
+
+        if user_info['is_logged'] == False:
+            raise UserException(ServiceErrorMessage.USER_NOT_LOGGED)
+
+        if user_info["expires_at"] <  datetime.datetime.now(datetime.timezone.utc):
+            raise UserException(ServiceErrorMessage.USER_TOKEN_EXPIRED)
         
         request_type = request_dto.dto_type
         
@@ -82,7 +99,7 @@ class UserService:
             case "update_general_info":
                 data = request_dto.model_dump(exclude_unset=True)
                 
-                user = self.user_repository.get_by_id(user_id)
+                user = self.user_repository.get_by_id(user_info['user_id'])
                 
                 if not user:
                     raise UserException(ServiceErrorMessage.USER_DOES_NOT_EXIST)
@@ -108,7 +125,7 @@ class UserService:
                     )                
                 
             case "update_password":
-                user = self.user_repository.get_by_id(user_id)
+                user = self.user_repository.get_by_id(user_info['user_id'])
                                 
                 if not user:
                     raise UserException(ServiceErrorMessage.USER_DOES_NOT_EXIST)
@@ -120,12 +137,12 @@ class UserService:
                 if request_dto.new_password != request_dto.confirm_password:
                     raise UserException(ServiceErrorMessage.PASSWORD_CONFIRMATION_MISMATCH)
                 
-                verified_password = Security.verify_password(old_password, old_password_hash)
+                verified_password = Security().verify_password(old_password, old_password_hash)
                 
                 if not verified_password:
                     raise UserException(ServiceErrorMessage.INVALID_PASSWORD)
                 
-                new_password_hash = Security.hash_password(request_dto.new_password)
+                new_password_hash = Security().hash_password(request_dto.new_password)
                 
                 if new_password_hash == old_password_hash:
                     raise UserException(ServiceErrorMessage.INVALID_PASSWORD)

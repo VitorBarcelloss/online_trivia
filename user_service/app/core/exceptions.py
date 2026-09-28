@@ -85,6 +85,24 @@ class ServiceErrorMessage:
         message="Token expired, please login again.",
     )
 
+    MISSING_PASSWORD = ErrorMessage(
+        status_code=400,
+        code="MISSING_PASSWORD",
+        message="Missing password, please provide a password.",
+    )
+
+    TOKEN_NOT_ALLOWED = ErrorMessage(
+        status_code=403,
+        code="TOKEN_NOT_ALLOWED",
+        message="Token not allowed for this operation, please check if the token type is valid.",
+    )
+
+    USER_NOT_LOGGED = ErrorMessage(
+        status_code=401,
+        code="USER_NOT_LOGGED",
+        message="User is not logged in, please login to perform this operation.",
+    )
+
 class UserException(Exception):
     def __init__(self, error: ErrorMessage):
         self.status_code = error.status_code

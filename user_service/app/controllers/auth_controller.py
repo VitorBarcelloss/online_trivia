@@ -21,7 +21,7 @@ def login(
 
 @router.post("/refresh", response_model=RefreshResponseDTO)
 def refresh(
-    user_info: dict = Depends(Security.get_current_user),
+    user_info: dict = Depends(Security().get_current_user),
     db = Depends(get_db)
 ):
     repository = UserRepository(db)
