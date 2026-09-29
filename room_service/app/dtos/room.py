@@ -18,6 +18,9 @@ class CreateRoomDTO(BaseModel):
 class JoinRoomDTO(BaseModel):
 	nickname: str
 	password: str | None = None
+ 
+class DeleteRoomResponseDTO(BaseModel):
+    code:str = "Room deleted with success!"
 
 
 class RoomResponseDTO(BaseModel):

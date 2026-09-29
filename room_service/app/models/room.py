@@ -15,7 +15,7 @@ class Room(BaseModel):
     id: UUID
     code: str
     host_id: UUID
-    package_id: int
+    package_id: int | None = None
     question_count: int = 10
     max_players: int = 10
     time_per_question: int = 30

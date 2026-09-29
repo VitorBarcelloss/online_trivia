@@ -75,25 +75,44 @@ class RoomRepository:
 
 		return rooms
 
-	def update_room_players(self, room: Room) -> Room:
-		self.redis.hset(
-				f"room:{room.id}",
-				"players",
-				json.dumps([str(player) for player in room.players]),
-    			)
+	def update_room_config(self, room: Room) -> bool:
+		updated = self.redis.hset(
+						f"room:{room.id}",
+						mapping=self._room_to_hash(room)
+						)
+
+		return updated > 0
+
+	def update_room_players(self, room: Room) -> bool:
+		updated = self.redis.hset(
+						f"room:{room.id}",
+						"players",
+						json.dumps([str(player) for player in room.players]),
+						)
   
-		return True
+		return updated == 1
 
 	def update_room_status(self, room: Room) -> Room:
-		self.redis.hset(
-				f"room:{room.id}",
-				"status",
-				room.status,
-    			)
-  
-		return True
+		updated = self.redis.hset(
+						f"room:{room.id}",
+						"status",
+						room.status,
+						)
+		
+		return updated == 1
 
-	def delete_room(self, room_code: str) -> bool: ...
+	def delete_room(self, room_code: str) -> bool:
+		room_id = self.redis.get(f"room:code:{room_code}")
+		if not room_id:
+			return False
+
+		deleted = self.redis.delete(
+							f"room:{room_id}",
+							f"room:code:{room_code}"
+							)
+		self.redis.srem("rooms:public", room_id)
+  
+		return deleted == 2
 	
 	def _hash_to_room(self, data: dict) -> Room:
 		return Room(

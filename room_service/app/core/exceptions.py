@@ -68,6 +68,11 @@ class RoomErrorMessage:
         code="PLAYER_ALREADY_IN_ROOM",
         message="Player is already in this room.",
     )
+    ROOM_UPDATE_FAILED = ErrorMessage(
+        status_code=503,
+        code="ROOM_UPDATE_FAILED",
+        message="This room couldn't be updated, please check if it is still a valid room."        
+    )
 
 class RoomException(Exception):
     def __init__(self, error: ErrorMessage):

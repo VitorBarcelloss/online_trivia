@@ -4,7 +4,7 @@ from app.core.config import settings
 from app.core.security import Security
 
 from app.core.exceptions import RoomErrorMessage, RoomException
-from app.dtos.room import CreateRoomDTO, JoinRoomDTO, RoomResponseDTO
+from app.dtos.room import CreateRoomDTO, JoinRoomDTO, RoomResponseDTO, DeleteRoomResponseDTO
 from app.models.room import Room, RoomStatus
 from app.repositories.room_repository import RoomRepository
 
@@ -25,7 +25,6 @@ class RoomService:
 			id=room_id,
 			code="",
 			host_id=host_id,
-   			package_id=request_dto.package_id,
 			players=[host_id],
 		)
   
@@ -35,19 +34,44 @@ class RoomService:
   
 		return self.create_room_response_dto(configured_room)
 
+
 	def get_room_service(self, room_code: str) -> RoomResponseDTO: 
 		room = self.room_repository.get_room_by_code(room_code)
 		if not room:
 			raise RoomException(RoomErrorMessage.ROOM_NOT_FOUND)
 		return self.create_room_response_dto(room)
 
+
 	def list_public_rooms_service(self) -> list[RoomResponseDTO]:
 		public_rooms = self.room_repository.list_public_rooms()
 		return [self.create_room_response_dto(room) for room in public_rooms]
 	
+ 
 	def list_all_rooms_service(self) -> list[RoomResponseDTO]:
 		public_rooms = self.room_repository.list_all_rooms()
 		return [self.create_room_response_dto(room) for room in public_rooms]
+
+
+	def change_room_service(
+		self,
+		room_code: str,
+		request_dto: JoinRoomDTO,
+		player_id: UUID,		
+	) -> RoomResponseDTO:
+		room = self.room_repository.get_room_by_code(room_code)
+		is_host = self.identify_host(room, player_id)
+	
+		if not is_host:
+			raise RoomException(RoomErrorMessage.HOST_ONLY)
+
+		room = self.configure_room(room, request_dto)
+		updated = self.room_repository.update_room_config(room)
+
+		if not updated:
+			raise RoomException(RoomErrorMessage.ROOM_UPDATE_FAILED)
+
+		return self.create_room_response_dto(room)
+  
 
 	def join_room_service(
 		self,
@@ -69,7 +93,10 @@ class RoomService:
 			raise RoomException(RoomErrorMessage.PLAYER_ALREADY_IN_ROOM)
 
 		room.players.append(player_id)
-		self.room_repository.update_room_players(room)
+		updated = self.room_repository.update_room_players(room)
+		if not updated:
+			raise RoomException(RoomErrorMessage.ROOM_UPDATE_FAILED)		
+  
 		return self.create_room_response_dto(room)
 
 	def leave_room_service(self, room_code: str, player_id: UUID) -> RoomResponseDTO:
@@ -81,8 +108,12 @@ class RoomService:
 			raise RoomException(RoomErrorMessage.PLAYER_NOT_IN_ROOM)
 
 		room.players.remove(player_id)
-		self.room_repository.update_room_players(room)
+		updated = self.room_repository.update_room_players(room)
+		if not updated:
+			raise RoomException(RoomErrorMessage.ROOM_UPDATE_FAILED)  
+  
 		return self.create_room_response_dto(room)
+
 
 	def start_game_service(self, room_code: str, player_id: UUID) -> RoomResponseDTO:
 		self.host_can_start_game(room_code, player_id)
@@ -91,14 +122,30 @@ class RoomService:
 		self.room_repository.update_room_status(room)
 		return self.create_room_response_dto(room)
 
+
+	def delete_room_service(self, room_code: str, player_id: UUID) -> DeleteRoomResponseDTO:
+		room = self.room_repository.get_room_by_code(room_code)
+		is_host = self.identify_host(room, player_id)
+
+		if not is_host:
+			raise RoomException(RoomErrorMessage.HOST_ONLY)
+
+		deleted = self.room_repository.delete_room(room_code)
+		if not deleted:
+			raise RoomException(RoomErrorMessage.ROOM_NOT_FOUND)
+
+		return DeleteRoomResponseDTO
+
+
 	def configure_room(self, room: Room, request_dto: CreateRoomDTO) -> Room: 
+		room.package_id = request_dto.package_id
 		room.question_count = request_dto.question_count
 		room.max_players = request_dto.max_players
 		room.time_per_question = request_dto.time_per_question
 		room.is_private = request_dto.is_private
 		room.show_ranking = request_dto.show_ranking
 
-		if room.is_private: 
+		if room.is_private and not room.password: 
 			if request_dto.password:
 				room.password = self.security.hash_password(request_dto.password)
 			else:
@@ -106,11 +153,14 @@ class RoomService:
 	
 		return room
   
+  
 	def identify_host(self, room: Room, player_id: UUID) -> bool:
 		return room.host_id == player_id
 
+
 	def validate_player_limit(self, room: Room) -> bool:
 		return len(room.players) < room.max_players
+
 
 	def validate_room_privacy(self, room: Room, room_password: str | None) -> bool: 
 		if not room.is_private:
@@ -118,9 +168,11 @@ class RoomService:
 
 		return self.security.verify_password(room_password, room.password)
  
+ 
 	def update_room_status(self, room: Room, status: RoomStatus) -> Room: 
 		room.status = status
 		return room
+
 
 	def host_can_start_game(self, room_code: str, player_id: UUID) -> bool:
 		room = self.room_repository.get_room_by_code(room_code)
@@ -140,6 +192,7 @@ class RoomService:
 			raise RoomException(RoomErrorMessage.ROOM_PLAYER_LIMIT_EXCEEDED)
 
 		return True
+
 
 	def create_room_response_dto(self, room: Room) -> RoomResponseDTO:
 		return RoomResponseDTO(
