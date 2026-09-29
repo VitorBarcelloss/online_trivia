@@ -15,28 +15,15 @@ class RoomService:
 		self.security = Security()
 
   
-	async def create_room_service(self, redis, request_dto: CreateRoomDTO, host_id: UUID) -> RoomResponseDTO:
+	def create_room_service(self, redis, request_dto: CreateRoomDTO, host_id: UUID) -> RoomResponseDTO:
 		if host_id is None:
 			raise RoomException(RoomErrorMessage.HOST_ID_REQUIRED)
 
 		room_id = str(uuid4())
-  
-		while True:
-			room_code = self.security.generate_room_code()
-			
-			success = await redis.set(
-				f"room:code:{room_code}",
-				room_id,
-				nx=True,
-				ex=settings.room_ttl
-			)
-
-			if success:
-				break
 		
 		room = Room(
 			id=room_id,
-			code=room_code,
+			code="",
 			host_id=host_id,
    			package_id=request_dto.package_id,
 			players=[host_id],
@@ -44,15 +31,7 @@ class RoomService:
   
 		configured_room = self.configure_room(room, request_dto)
 
-		await redis.hset(
-			f"room:{room_id}",
-			mapping=configured_room,
-		)
-  
-		await redis.expire(
-      		f"room:{room_id}", 
-        	settings.room_ttl,
-		)
+		configured_room = self.room_repository.create_room(configured_room)
   
 		return self.create_room_response_dto(configured_room)
 
@@ -64,6 +43,10 @@ class RoomService:
 
 	def list_public_rooms_service(self) -> list[RoomResponseDTO]:
 		public_rooms = self.room_repository.list_public_rooms()
+		return [self.create_room_response_dto(room) for room in public_rooms]
+	
+	def list_all_rooms_service(self) -> list[RoomResponseDTO]:
+		public_rooms = self.room_repository.list_all_rooms()
 		return [self.create_room_response_dto(room) for room in public_rooms]
 
 	def join_room_service(
@@ -86,7 +69,7 @@ class RoomService:
 			raise RoomException(RoomErrorMessage.PLAYER_ALREADY_IN_ROOM)
 
 		room.players.append(player_id)
-		self.room_repository.update_room(room)
+		self.room_repository.update_room_players(room)
 		return self.create_room_response_dto(room)
 
 	def leave_room_service(self, room_code: str, player_id: UUID) -> RoomResponseDTO:
@@ -98,14 +81,14 @@ class RoomService:
 			raise RoomException(RoomErrorMessage.PLAYER_NOT_IN_ROOM)
 
 		room.players.remove(player_id)
-		self.room_repository.update_room(room)
+		self.room_repository.update_room_players(room)
 		return self.create_room_response_dto(room)
 
 	def start_game_service(self, room_code: str, player_id: UUID) -> RoomResponseDTO:
 		self.host_can_start_game(room_code, player_id)
 
 		room = self.update_room_status(room, RoomStatus.IN_PROGRESS)
-		self.room_repository.update_room(room)
+		self.room_repository.update_room_status(room)
 		return self.create_room_response_dto(room)
 
 	def configure_room(self, room: Room, request_dto: CreateRoomDTO) -> Room: 

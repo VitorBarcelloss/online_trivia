@@ -22,6 +22,12 @@ def list_public_rooms() -> list[RoomResponseDTO]:
     room_service = RoomService(room_repository)
     return room_service.list_public_rooms_service()
 
+@room_router.get("/all", response_model=list[RoomResponseDTO])
+def list_all_rooms() -> list[RoomResponseDTO]:
+    room_repository = RoomRepository()
+    room_service = RoomService(room_repository)
+    return room_service.list_all_rooms_service()
+
 @room_router.get("/{room_code}", response_model=RoomResponseDTO)
 def get_room(room_code: str) -> RoomResponseDTO:
     room_repository = RoomRepository()
