@@ -5,7 +5,6 @@ from app.core.security import Security
 from app.database.database import get_db
 from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
-from app.core.exceptions import UserException, ServiceErrorMessage
 
 router = APIRouter(
     prefix="/users",
