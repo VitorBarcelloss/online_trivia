@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import StrEnum
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RoomStatus(StrEnum):
@@ -22,6 +22,6 @@ class Room(BaseModel):
     is_private: bool = False
     show_ranking: bool = False
     status: RoomStatus = RoomStatus.WAITING
-    players: list[UUID] = []
+    players: list[UUID] = Field(default_factory=list)
     password: str | None = None
-    created_at: datetime = datetime.now()
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

@@ -5,14 +5,14 @@ from app.core.exceptions import RoomException
 
 
 async def room_exception_handler(
-    request: Request,
+    _: Request,
     exception: RoomException,
 ) -> JSONResponse:
     return JSONResponse(
         status_code=exception.status_code,
         content={
             "status": exception.status_code,
-            "error": exception.code,
+            "code": exception.code,
             "message": exception.message,
         },
     )

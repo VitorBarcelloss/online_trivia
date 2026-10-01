@@ -28,17 +28,23 @@ class QuestionPackageRepository:
     def get_package_by_id(self, package_id: int) -> QuestionPackage | None:
         return self.session.query(QuestionPackage).filter_by(id=package_id).first()
 
+    def get_by_author_and_name(self, author_id: UUID, name_key: str) -> QuestionPackage | None:
+        return self.session.query(QuestionPackage).filter_by(
+            author_id=author_id,
+            name_key=name_key,
+        ).first()
+
     def create_question_package(self, package: QuestionPackage) -> QuestionPackage:
         self.session.add(package)
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(package)
         return package
 
     def update_question_package(self, package: QuestionPackage) -> QuestionPackage:
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(package)
         return package
 
     def delete_question_package(self, package: QuestionPackage) -> None:
         self.session.delete(package)
-        self.session.commit()
+        self.session.flush()

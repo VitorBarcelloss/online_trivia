@@ -48,18 +48,24 @@ class QuestionRepository:
     def get_package_by_id(self, package_id: int) -> QuestionPackage | None:
         return self.session.query(QuestionPackage).filter_by(id=package_id).first()
 
+    def get_duplicate(self, package_id: int, statement: str) -> Question | None:
+        return self.session.query(Question).filter_by(
+            package_id=package_id,
+            statement=statement,
+        ).first()
+
     def create_question(self, question: Question) -> Question:
         self.session.add(question)
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(question)
         return question
 
     def update_question(self, question: Question) -> Question:
         self.session.add(question)
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(question)
         return question
 
     def delete_question(self, question: Question) -> None:
         self.session.delete(question)
-        self.session.commit()
+        self.session.flush()

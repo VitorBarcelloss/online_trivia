@@ -19,6 +19,16 @@ class SecurityErrorMessage:
     )
     
 class ServiceErrorMessage:
+    USER_ALREADY_EXISTS = ErrorMessage(
+        status_code=409,
+        code="USER_ALREADY_EXISTS",
+        message="An account with this email or nickname already exists with different data.",
+    )
+    INVALID_REQUEST = ErrorMessage(
+        status_code=422,
+        code="INVALID_REQUEST",
+        message="One or more provided fields are invalid.",
+    )
     INVALID_USER_TOKEN = ErrorMessage(
         status_code=401,
         code="INVALID_USER_TOKEN",

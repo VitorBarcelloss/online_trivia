@@ -8,14 +8,56 @@ class ErrorMessage(NamedTuple):
 
 
 class TriviaErrorMessages:
-    QUESTION_NOT_FOUND = ErrorMessage(404, "QUESTION_NOT_FOUND", "Question not found.")
-    QUESTIONS_NOT_FOUND = ErrorMessage(404, "QUESTIONS_NOT_FOUND", "No questions found.")
-    QUESTION_CREATION_FAILED = ErrorMessage(500, "QUESTION_CREATION_FAILED", "Failed to create question.")
-    PACKAGE_ID_MISSING = ErrorMessage(400, "PACKAGE_ID_MISSING", "Question package ID is required.")
-    QUESTION_ID_MISSING = ErrorMessage(400, "QUESTION_ID_MISSING", "Question ID is required.")
-    UNAUTHORIZED_PACKAGE_UPDATE = ErrorMessage(403, "UNAUTHORIZED_PACKAGE_UPDATE", "Only the package author can modify it.")
-    UNAUTHORIZED_QUESTION_UPDATE = ErrorMessage(403, "UNAUTHORIZED_QUESTION_UPDATE", "Only the package author can modify its questions.")
-    UNAUTHORIZED_ALTERNATIVE_UPDATE = ErrorMessage(403, "UNAUTHORIZED_ALTERNATIVE_UPDATE", "Only the package author can modify its alternatives.")
+    DUPLICATE_RESOURCE_CONFLICT = ErrorMessage(
+        status_code=409,
+        code="DUPLICATE_RESOURCE_CONFLICT",
+        message="A resource with this natural key already exists with different data."
+    )
+    INVALID_REQUEST = ErrorMessage(
+        status_code=422,
+        code="INVALID_REQUEST",
+        message="One or more provided fields are invalid."
+    )
+    QUESTION_NOT_FOUND = ErrorMessage(
+        status_code=404,
+        code="QUESTION_NOT_FOUND",
+        message="Question not found."
+    )
+    QUESTIONS_NOT_FOUND = ErrorMessage(
+        status_code=404,
+        code="QUESTIONS_NOT_FOUND",
+        message="No questions found."
+    )
+    QUESTION_CREATION_FAILED = ErrorMessage(
+        status_code=500,
+        code="QUESTION_CREATION_FAILED",
+        message="Failed to create question."
+    )
+    PACKAGE_ID_MISSING = ErrorMessage(
+        status_code=400,
+        code="PACKAGE_ID_MISSING",
+        message="Question package ID is required."
+    )
+    QUESTION_ID_MISSING = ErrorMessage(
+        status_code=400,
+        code="QUESTION_ID_MISSING",
+        message="Question ID is required."
+    )
+    UNAUTHORIZED_PACKAGE_UPDATE = ErrorMessage(
+        status_code=403,
+        code="UNAUTHORIZED_PACKAGE_UPDATE",
+        message="Only the package author can modify it."
+    )
+    UNAUTHORIZED_QUESTION_UPDATE = ErrorMessage(
+        status_code=403,
+        code="UNAUTHORIZED_QUESTION_UPDATE",
+        message="Only the package author can modify its questions."
+    )
+    UNAUTHORIZED_ALTERNATIVE_UPDATE = ErrorMessage(
+        status_code=403,
+        code="UNAUTHORIZED_ALTERNATIVE_UPDATE",
+        message="Only the package author can modify its alternatives."
+    )
     ALTERNATIVE_NOT_FOUND = ErrorMessage(
         status_code=404,
         code="ALTERNATIVE_NOT_FOUND",

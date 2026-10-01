@@ -1,15 +1,29 @@
-from datetime import date
+from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
-class QuestionPackageDTO(BaseModel):
-    id: int | None = None
-    name: str | None = None
+class QuestionPackageCreateDTO(BaseModel):
+    name: str = Field(min_length=1, max_length=50)
     description: str | None = None
-    author_id: UUID | None = None
     package_type: str | None = None
     is_public: bool = False
-    created_at: date | None = None
-    updated_at: date | None = None
+
+
+class QuestionPackageUpdateDTO(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=50)
+    description: str | None = None
+    package_type: str | None = None
+    is_public: bool | None = None
+
+
+class QuestionPackageResponseDTO(BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+    author_id: UUID
+    package_type: str | None = None
+    is_public: bool = False
+    created_at: datetime
+    updated_at: datetime

@@ -1,72 +1,78 @@
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, Response, status
 
-from app.dtos.room import CreateRoomDTO, JoinRoomDTO, RoomResponseDTO, DeleteRoomResponseDTO
-from room_service.app.repositories.room_repository import RoomRepository
-from room_service.app.services.room_service import RoomService
+from app.dtos.room import CreateRoomDTO, JoinRoomDTO, RoomResponseDTO, UpdateRoomDTO
+from app.repositories.room_repository import RoomRepository
+from app.services.room_service import RoomService
 
 room_router = APIRouter(prefix="/rooms", tags=["Rooms"])
 
 
-@room_router.post("", response_model=RoomResponseDTO)
-def create_room(request_dto: CreateRoomDTO, host_id: UUID) -> RoomResponseDTO:
+@room_router.post("", response_model=RoomResponseDTO, status_code=status.HTTP_201_CREATED)
+async def create_room(
+	request_dto: CreateRoomDTO,
+	host_id: UUID,
+	idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> RoomResponseDTO:
     room_repository = RoomRepository()
     room_service = RoomService(room_repository)
-    return room_service.create_room_service(request_dto, host_id)
+    return await room_service.create_room_service(request_dto, host_id, idempotency_key)
 
-@room_router.get("/public", response_model=list[RoomResponseDTO])
-def list_public_rooms() -> list[RoomResponseDTO]: 
+@room_router.get("", response_model=list[RoomResponseDTO])
+async def list_public_rooms() -> list[RoomResponseDTO]:
     room_repository = RoomRepository()
     room_service = RoomService(room_repository)
-    return room_service.list_public_rooms_service()
+    return await room_service.list_public_rooms_service()
 
 @room_router.get("/all", response_model=list[RoomResponseDTO])
-def list_all_rooms() -> list[RoomResponseDTO]:
+async def list_all_rooms() -> list[RoomResponseDTO]:
     room_repository = RoomRepository()
     room_service = RoomService(room_repository)
-    return room_service.list_all_rooms_service()
+    return await room_service.list_all_rooms_service()
 
 @room_router.get("/{room_code}", response_model=RoomResponseDTO)
-def get_room(room_code: str) -> RoomResponseDTO:
+async def get_room(room_code: str) -> RoomResponseDTO:
     room_repository = RoomRepository()
     room_service = RoomService(room_repository)
-    return room_service.get_room_service(room_code)
+    return await room_service.get_room_service(room_code)
 
-@room_router.put("/{room_code}/change", response_model=RoomResponseDTO)
-def change_room(
+@room_router.patch("/{room_code}", response_model=RoomResponseDTO)
+async def change_room(
     room_code: str,
-    request_dto: CreateRoomDTO,
+    request_dto: UpdateRoomDTO,
     player_id: UUID,
 ) -> RoomResponseDTO:
     room_repository = RoomRepository()
     room_service = RoomService(room_repository)
-    return room_service.change_room_service(room_code, request_dto, player_id)
+    return await room_service.change_room_service(room_code, request_dto, player_id)
 
-@room_router.put("/{room_code}/join", response_model=RoomResponseDTO)
-def join_room(
+@room_router.post("/{room_code}/players", response_model=RoomResponseDTO)
+async def join_room(
 	room_code: str,
 	request_dto: JoinRoomDTO,
 	player_id: UUID,
 ) -> RoomResponseDTO:
     room_repository = RoomRepository()
     room_service = RoomService(room_repository)
-    return room_service.join_room_service(room_code, request_dto, player_id)
+    return await room_service.join_room_service(room_code, request_dto, player_id)
 
-@room_router.put("/{room_code}/leave", response_model=RoomResponseDTO)
-def leave_room(room_code: str, player_id: UUID) -> RoomResponseDTO:
+@room_router.delete("/{room_code}/players/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def leave_room(room_code: str, player_id: UUID) -> Response:
     room_repository = RoomRepository()
     room_service = RoomService(room_repository)
-    return room_service.leave_room_service(room_code, player_id)
+    await room_service.leave_room_service(room_code, player_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@room_router.delete("/{room_code}", response_model=DeleteRoomResponseDTO)
-def delete_room(room_code: str, player_id: UUID) -> DeleteRoomResponseDTO:
+@room_router.delete("/{room_code}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_room(room_code: str, player_id: UUID) -> Response:
     room_repository = RoomRepository()
     room_service = RoomService(room_repository)
-    return room_service.delete_room_service(room_code, player_id)
+    await room_service.delete_room_service(room_code, player_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @room_router.post("/{room_code}/start", response_model=RoomResponseDTO)
-def start_game(room_code: str, player_id: UUID) -> RoomResponseDTO: 
+async def start_game(room_code: str, player_id: UUID) -> RoomResponseDTO:
     room_repository = RoomRepository()
     room_service = RoomService(room_repository)
-    return room_service.start_game_service(room_code, player_id)
+    return await room_service.start_game_service(room_code, player_id)

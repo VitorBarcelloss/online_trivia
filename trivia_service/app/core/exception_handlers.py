@@ -10,5 +10,9 @@ async def trivia_exception_handler(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=exception.status_code,
-        content={"code": exception.code, "message": exception.message},
+        content={
+            "status": exception.status_code,
+            "code": exception.code,
+            "message": exception.message,
+        },
     )

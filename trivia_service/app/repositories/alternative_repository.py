@@ -61,17 +61,23 @@ class AlternativeRepository:
             )
         return query.first()
 
+    def get_duplicate(self, question_id: int, text: str) -> Alternative | None:
+        return self.session.query(Alternative).filter_by(
+            question_id=question_id,
+            text=text,
+        ).first()
+
     def create_alternative(self, alternative: Alternative) -> Alternative:
         self.session.add(alternative)
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(alternative)
         return alternative
 
     def update_alternative(self, alternative: Alternative) -> Alternative:
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(alternative)
         return alternative
 
     def delete_alternative(self, alternative: Alternative) -> None:
         self.session.delete(alternative)
-        self.session.commit()
+        self.session.flush()

@@ -8,6 +8,16 @@ class ErrorMessage(NamedTuple):
 
 
 class RoomErrorMessage:
+    IDEMPOTENCY_KEY_CONFLICT = ErrorMessage(
+        status_code=409,
+        code="IDEMPOTENCY_KEY_CONFLICT",
+        message="This idempotency key is already in use for a different or pending request.",
+    )
+    INVALID_REQUEST = ErrorMessage(
+        status_code=422,
+        code="INVALID_REQUEST",
+        message="One or more provided fields are invalid."
+    )
     ROOM_NOT_FOUND = ErrorMessage(
         status_code=404,
         code="ROOM_NOT_FOUND",
@@ -27,6 +37,16 @@ class RoomErrorMessage:
         status_code=409,
         code="ROOM_NOT_WAITING",
         message="Room is not accepting this operation in its current state.",
+    )
+    ROOM_ALREADY_STARTED = ErrorMessage(
+        status_code=409,
+        code="ROOM_ALREADY_STARTED",
+        message="The room has already started or finished.",
+    )
+    NOT_ENOUGH_PLAYERS = ErrorMessage(
+        status_code=409,
+        code="NOT_ENOUGH_PLAYERS",
+        message="At least one player is required to start the game.",
     )
     HOST_ONLY = ErrorMessage(
         status_code=403,
