@@ -27,3 +27,11 @@ class QuestionPackageResponseDTO(BaseModel):
     is_public: bool = False
     created_at: datetime
     updated_at: datetime
+    
+class GameQuestionResponseDTO(BaseModel):
+    package_id: UUID
+    question_id: UUID
+    statement: str
+    alternatives: list[dict]
+    correct_answer: str
+    explanation: str | None = None

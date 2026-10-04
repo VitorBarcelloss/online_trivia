@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Response, status
 from app.database.database import get_db
 
 from app.dtos.question_package import (
+	GameQuestionResponseDTO,
 	QuestionPackageCreateDTO,
 	QuestionPackageResponseDTO,
 	QuestionPackageUpdateDTO,
@@ -23,7 +24,15 @@ def get_question_packages(
 	package_service = QuestionPackageService(package_repository)
 	return package_service.get_question_packages(player_id)
 
-
+@router.get("/{package_id}/game-questions", response_model=list[GameQuestionResponseDTO])
+def get_game_questions(
+	package_id: int,
+	player_id: UUID | None = None,
+	db = Depends(get_db)
+) -> list[GameQuestionResponseDTO]:
+	package_repository = QuestionPackageRepository(db)
+	package_service = QuestionPackageService(package_repository)
+	return package_service.get_game_questions(package_id, player_id)
 
 @router.get("/{package_id}", response_model=QuestionPackageResponseDTO)
 def get_question_package__by_id(

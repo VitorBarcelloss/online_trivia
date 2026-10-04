@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 
 from app.dtos.question_package import (
+    GameQuestionResponseDTO,
     QuestionPackageCreateDTO,
     QuestionPackageResponseDTO,
     QuestionPackageUpdateDTO,
@@ -37,6 +38,39 @@ class QuestionPackageService:
             raise TriviaException(TriviaErrorMessages.UNAUTHORIZED_PACKAGE_UPDATE)
 
         return self._from_entity_to_dto(package)
+    
+    def get_game_questions(
+        self,
+        package_id: int,
+        player_id: UUID | None = None
+    ) -> list[GameQuestionResponseDTO]:
+        package = self.package_repository.get_package_by_id(package_id)
+
+        if not package:
+            raise TriviaException(TriviaErrorMessages.PACKAGE_NOT_FOUND)
+
+        if not package.is_public and player_id != package.author_id:
+            raise TriviaException(TriviaErrorMessages.UNAUTHORIZED_PACKAGE_UPDATE)
+
+        questions = package.questions
+        
+        return [
+            GameQuestionResponseDTO(
+                package_id=question.package_id,
+                question_id=question.id,
+                statement=question.statement,
+                alternatives=[
+                    {
+                        "id": alternative.id,
+                        "text": alternative.text
+                    }
+                    for alternative in question.alternatives
+                ],
+                correct_answer=question.correct_answer,
+                explanation=question.explanation
+            )
+            for question in questions
+        ]
 
     def create_question_package(
         self,
