@@ -1,6 +1,7 @@
 import json
 
-from app.config import settings
+from config.settings import settings
+
 from app.domain.entities.game import Game
 from app.infrastructure.redis import get_redis_client
 
@@ -15,7 +16,9 @@ class RedisGameRepository:
         room_game_key = f"game:room:{game.room_id}"
 
         if await self.redis.exists(game_key):
-            raise ValueError(f"Game with ID {game.id} already exists.")
+            raise ValueError(
+                f"Game with ID {game.id} already exists."
+            )
 
         await self.redis.hset(
             game_key,
@@ -39,7 +42,10 @@ class RedisGameRepository:
 
         return game
 
-    async def get(self, game_id: str) -> Game | None:
+    async def get(
+        self,
+        game_id: str,
+    ) -> Game | None:
 
         game_data = await self.redis.hgetall(
             f"game:{game_id}"
@@ -49,9 +55,12 @@ class RedisGameRepository:
             return None
 
         return self._hash_to_game(game_data)
-    
-    
-    async def get_by_room_id(self, room_id: str) -> Game | None:
+
+    async def get_by_room_id(
+        self,
+        room_id: str,
+    ) -> Game | None:
+
         game_id = await self.redis.get(
             f"game:room:{room_id}"
         )
@@ -60,9 +69,11 @@ class RedisGameRepository:
             return None
 
         return await self.get(game_id)
-    
 
-    async def update(self, game: Game) -> bool:
+    async def update(
+        self,
+        game: Game,
+    ) -> bool:
 
         game_key = f"game:{game.id}"
 
@@ -71,12 +82,26 @@ class RedisGameRepository:
 
         await self.redis.hset(
             game_key,
-            mapping=self._game_to_hash(game)
+            mapping=self._game_to_hash(game),
+        )
+
+        await self.redis.expire(
+            game_key,
+            settings.game_ttl,
+        )
+
+        await self.redis.expire(
+            f"game:room:{game.room_id}",
+            settings.game_ttl,
         )
 
         return True
 
-    async def delete(self, game_id: str) -> bool:
+    async def delete(
+        self,
+        game_id: str,
+    ) -> bool:
+
         game = await self.get(game_id)
 
         if not game:
@@ -89,11 +114,15 @@ class RedisGameRepository:
 
         return deleted > 0
 
-    def _game_to_hash(self, game: Game) -> dict:
+    def _game_to_hash(
+        self,
+        game: Game,
+    ) -> dict:
 
         return {
             "id": game.id,
             "room_id": game.room_id,
+            "host_id": game.host_id,
             "status": game.status,
             "current_question": json.dumps(
                 game.current_question.model_dump()
@@ -108,15 +137,23 @@ class RedisGameRepository:
                 player.model_dump()
                 for player in game.players
             ]),
+            "answers": json.dumps([
+                answer.model_dump(mode="json")
+                for answer in game.answers
+            ]),
             "question_time": game.question_time,
             "show_ranking": str(game.show_ranking),
         }
 
-    def _hash_to_game(self, data: dict) -> Game:
+    def _hash_to_game(
+        self,
+        data: dict,
+    ) -> Game:
 
         return Game.model_validate({
             "id": data["id"],
             "room_id": data["room_id"],
+            "host_id": data["host_id"],
             "status": data["status"],
             "current_question": json.loads(
                 data["current_question"]
@@ -127,8 +164,12 @@ class RedisGameRepository:
             "players": json.loads(
                 data["players"]
             ),
+            "answers": json.loads(
+                data["answers"]
+            ),
             "question_time": int(
                 data["question_time"]
             ),
             "show_ranking": data["show_ranking"] == "True",
         })
+

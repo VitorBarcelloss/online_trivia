@@ -4,9 +4,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "room-service"
     debug: bool = False
+
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0
+
+    rabbitmq_url: str = (
+        "amqp://guest:guest@rabbitmq:5672/"
+    )
+
     room_code_length: int = 6
     room_code_alphabet: str = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     room_ttl: int = 3600

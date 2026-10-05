@@ -3,16 +3,8 @@ from fastapi import WebSocket
 
 class ConnectionManager:
     def __init__(self):
-        self.room_connections: dict[
-            str,
-            dict[str, WebSocket],
-        ] = {}
-
-        self.game_connections: dict[
-            str,
-            dict[str, WebSocket],
-        ] = {}
-
+        self.room_connections: dict[str, dict[str, WebSocket]] = {}
+        self.game_connections: dict[str, dict[str, WebSocket]] = {}
         self.room_games: dict[str, str] = {}
 
     async def connect(
@@ -31,7 +23,6 @@ class ConnectionManager:
                 player_id=player_id,
                 websocket=websocket,
             )
-
             return game_id
 
         if room_code not in self.room_connections:
@@ -85,17 +76,10 @@ class ConnectionManager:
         game_id = self.room_games.get(room_code)
 
         if game_id:
-            connections = self.game_connections.get(game_id)
-
-            if connections:
-                connections.pop(player_id, None)
-
-                if not connections:
-                    self.game_connections.pop(
-                        game_id,
-                        None,
-                    )
-
+            self.disconnect_game_player(
+                game_id=game_id,
+                player_id=player_id,
+            )
             return
 
         connections = self.room_connections.get(room_code)
@@ -106,10 +90,7 @@ class ConnectionManager:
         connections.pop(player_id, None)
 
         if not connections:
-            self.room_connections.pop(
-                room_code,
-                None,
-            )
+            self.room_connections.pop(room_code, None)
 
     async def send_to_player(
         self,
@@ -122,8 +103,17 @@ class ConnectionManager:
             {},
         ).get(player_id)
 
-        if websocket:
+        if not websocket:
+            return
+
+        try:
             await websocket.send_json(message)
+
+        except Exception:
+            self.disconnect_game_player(
+                game_id=game_id,
+                player_id=player_id,
+            )
 
     async def broadcast(
         self,
@@ -135,5 +125,52 @@ class ConnectionManager:
             {},
         )
 
-        for websocket in connections.values():
-            await websocket.send_json(message)
+        disconnected_players = []
+
+        for player_id, websocket in connections.items():
+            try:
+                await websocket.send_json(message)
+
+            except Exception:
+                disconnected_players.append(player_id)
+
+        for player_id in disconnected_players:
+            self.disconnect_game_player(
+                game_id=game_id,
+                player_id=player_id,
+            )
+
+    def disconnect_game_player(
+        self,
+        game_id: str,
+        player_id: str,
+    ) -> None:
+        connections = self.game_connections.get(game_id)
+
+        if not connections:
+            return
+
+        connections.pop(player_id, None)
+
+        if not connections:
+            self.game_connections.pop(game_id, None)
+
+    def cleanup_game(
+        self,
+        room_code: str,
+        game_id: str,
+    ) -> None:
+        self.room_games.pop(
+            room_code,
+            None,
+        )
+
+        self.game_connections.pop(
+            game_id,
+            None,
+        )
+
+        self.room_connections.pop(
+            room_code,
+            None,
+        )

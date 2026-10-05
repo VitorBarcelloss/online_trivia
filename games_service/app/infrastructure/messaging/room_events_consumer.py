@@ -2,18 +2,19 @@ import json
 
 import aio_pika
 
+from config.settings import settings
+
 from app.presentation.game_dependencies import (
     add_player_use_case,
     connection_manager,
     game_repository,
     remove_player_use_case,
 )
+
 from app.presentation.game_runtime import (
     build_ranking,
 )
 
-
-RABBITMQ_URL = "amqp://guest:guest@rabbitmq:5672/"
 
 EXCHANGE_NAME = "room_events"
 
@@ -23,7 +24,9 @@ QUEUE_NAME = "game_service_room_events"
 async def handle_event(
     message: aio_pika.abc.AbstractIncomingMessage,
 ) -> None:
+
     async with message.process():
+
         data = json.loads(
             message.body.decode()
         )
@@ -42,6 +45,7 @@ async def handle_event(
             return
 
         if event_type == "player_joined":
+
             player_id = data.get("player_id")
             nickname = data.get("nickname")
 
@@ -75,6 +79,7 @@ async def handle_event(
             )
 
         elif event_type == "player_left":
+
             player_id = data.get("player_id")
 
             if not player_id:
@@ -108,8 +113,9 @@ async def handle_event(
 
 
 async def start_room_events_consumer() -> None:
+
     connection = await aio_pika.connect_robust(
-        RABBITMQ_URL,
+        settings.rabbitmq_url,
     )
 
     channel = await connection.channel()

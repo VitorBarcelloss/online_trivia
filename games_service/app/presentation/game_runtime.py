@@ -9,7 +9,6 @@ from app.presentation.game_dependencies import (
 
 
 question_timers: dict[str, asyncio.Task] = {}
-
 question_locks: dict[str, asyncio.Lock] = {}
 
 
@@ -61,7 +60,9 @@ def cancel_question_timer(
 def cleanup_game(
     game_id: str,
 ) -> None:
-    cancel_question_timer(game_id)
+    cancel_question_timer(
+        game_id,
+    )
 
     question_locks.pop(
         game_id,
@@ -73,7 +74,9 @@ def start_question_timer(
     game_id: str,
     question_time: int,
 ) -> None:
-    cancel_question_timer(game_id)
+    cancel_question_timer(
+        game_id,
+    )
 
     question_timers[game_id] = asyncio.create_task(
         question_timer(
@@ -88,7 +91,9 @@ async def question_timer(
     question_time: int,
 ) -> None:
     try:
-        await asyncio.sleep(question_time)
+        await asyncio.sleep(
+            question_time,
+        )
 
         await resolve_and_next_question(
             game_id=game_id,
@@ -100,13 +105,16 @@ async def question_timer(
 
 async def resolve_and_next_question(
     game_id: str,
+    expected_question_id: str | None = None,
 ) -> None:
-    lock = get_question_lock(game_id)
-
-    should_cleanup = False
+    lock = get_question_lock(
+        game_id,
+    )
 
     async with lock:
-        game = await game_repository.get(game_id)
+        game = await game_repository.get(
+            game_id,
+        )
 
         if not game:
             return
@@ -115,6 +123,12 @@ async def resolve_and_next_question(
             return
 
         if not game.current_question:
+            return
+
+        if (
+            expected_question_id
+            and game.current_question.id != expected_question_id
+        ):
             return
 
         question = game.current_question
@@ -155,23 +169,23 @@ async def resolve_and_next_question(
                 },
             )
 
-            should_cleanup = True
-
-        else:
-            await connection_manager.broadcast(
-                game_id=game_id,
-                message={
-                    "type": "next_question",
-                    "question": build_public_question(
-                        game.current_question,
-                    ),
-                },
+            cleanup_game(
+                game_id,
             )
 
-            start_question_timer(
-                game_id=game_id,
-                question_time=game.question_time,
-            )
+            return
 
-    if should_cleanup:
-        cleanup_game(game_id)
+        await connection_manager.broadcast(
+            game_id=game_id,
+            message={
+                "type": "next_question",
+                "question": build_public_question(
+                    game.current_question,
+                ),
+            },
+        )
+
+        start_question_timer(
+            game_id=game_id,
+            question_time=game.question_time,
+        )

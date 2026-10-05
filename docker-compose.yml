@@ -1,0 +1,91 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: trivia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trivia
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+  redis:
+    image: redis:7
+    container_name: trivia-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: trivia-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+
+  user-service:
+    build:
+      context: ./user_service
+    container_name: trivia-user-service
+    restart: unless-stopped
+    env_file:
+      - ./user_service/.env
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+
+
+  trivia-service:
+    build:
+      context: ./trivia_service
+    container_name: trivia-trivia-service
+    restart: unless-stopped
+    env_file:
+      - ./trivia_service/.env
+    depends_on:
+      - postgres
+    ports:
+      - "8001:8001"
+
+
+  room-service:
+    build:
+      context: ./room_service
+    container_name: trivia-room-service
+    restart: unless-stopped
+    env_file:
+      - ./room_service/.env
+    depends_on:
+      - redis
+      - rabbitmq
+    ports:
+      - "8002:8002"
+
+
+  game-service:
+    build:
+      context: ./games_service
+    container_name: trivia-game-service
+    restart: unless-stopped
+    env_file:
+      - ./games_service/.env
+    depends_on:
+      - redis
+      - rabbitmq
+      - room-service
+      - trivia-service
+    ports:
+      - "8003:8003"
+
+
+volumes:
+  postgres_data:

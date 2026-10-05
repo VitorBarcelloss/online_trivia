@@ -1,13 +1,18 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import (
+    BaseSettings,
+    SettingsConfigDict,
+)
 
 
 class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"
 
-    room_service_url: str = "http://room-service:8000/rooms"
+    room_service_url: str = (
+        "http://room-service:8002/rooms"
+    )
 
     trivia_service_url: str = (
-        "http://trivia-service:8000/packages"
+        "http://trivia-service:8001/question-packages"
     )
 
     rabbitmq_url: str = (
@@ -15,6 +20,12 @@ class Settings(BaseSettings):
     )
 
     game_ttl: int = 3600
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
 settings = Settings()

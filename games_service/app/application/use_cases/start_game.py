@@ -5,6 +5,7 @@ from app.infrastructure.clients.room_client import RoomClient
 from app.infrastructure.clients.trivia_client import TriviaClient
 
 from games_service.app.domain.entities.game import Game
+from games_service.app.domain.entities.game_player import GamePlayer
 from games_service.app.domain.repositories.game_repository import GameRepository
 
 
@@ -68,6 +69,15 @@ class StartGameUseCase:
             k=room.question_count,
         )
 
+        players = [
+            GamePlayer(
+                user_id=str(player_id),
+                nickname=str(player_id),
+                score=0,
+            )
+            for player_id in room.players
+        ]
+
         game = Game(
             id=str(uuid.uuid4()),
             room_id=str(room.id),
@@ -75,7 +85,7 @@ class StartGameUseCase:
             status="IN_PROGRESS",
             current_question=selected_questions[0],
             questions=selected_questions,
-            players=room.players,
+            players=players,
             question_time=room.time_per_question,
             show_ranking=room.show_ranking,
         )

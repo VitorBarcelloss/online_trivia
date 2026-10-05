@@ -1,3 +1,5 @@
+from config.settings import settings
+
 from app.application.use_cases.add_player import AddPlayerUseCase
 from app.application.use_cases.finish_game import FinishGameUseCase
 from app.application.use_cases.next_question import NextQuestionUseCase
@@ -23,11 +25,11 @@ game_repository = RedisGameRepository()
 
 
 room_client = RoomClient(
-    base_url="http://room-service:8000/rooms"
+    base_url=settings.room_service_url,
 )
 
 trivia_client = TriviaClient(
-    base_url="http://trivia-service:8000/packages"
+    base_url=settings.trivia_service_url,
 )
 
 

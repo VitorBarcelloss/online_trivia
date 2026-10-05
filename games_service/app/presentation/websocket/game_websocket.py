@@ -12,11 +12,11 @@ from app.presentation.game_dependencies import (
 )
 
 from app.presentation.game_runtime import (
+    build_public_question,
     build_ranking,
     cancel_question_timer,
     cleanup_game,
     resolve_and_next_question,
-    build_public_question,
 )
 
 from app.presentation.websocket.events import (
@@ -77,14 +77,13 @@ async def game_websocket(
                             "message": "Game has not started.",
                         }
                     )
-
                     continue
 
-                event = SubmitAnswerEvent.model_validate(
-                    data,
-                )
-
                 try:
+                    event = SubmitAnswerEvent.model_validate(
+                        data,
+                    )
+
                     await submit_answer_use_case.execute(
                         game_id=game_id,
                         player_id=player_id,
@@ -117,13 +116,22 @@ async def game_websocket(
                         if answer.question_id == question_id
                     ]
 
-                    if len(answers) >= len(game.players):
+                    active_players = [
+                        player
+                        for player in game.players
+                    ]
+
+                    if (
+                        active_players
+                        and len(answers) >= len(active_players)
+                    ):
                         cancel_question_timer(
                             game_id,
                         )
 
                         await resolve_and_next_question(
-                            game_id,
+                            game_id=game_id,
+                            expected_question_id=question_id,
                         )
 
                 except ValueError as error:
@@ -148,14 +156,13 @@ async def game_websocket(
                             "message": "Game has not started.",
                         }
                     )
-
                     continue
 
-                FinishGameEvent.model_validate(
-                    data,
-                )
-
                 try:
+                    FinishGameEvent.model_validate(
+                        data,
+                    )
+
                     game = await finish_game_use_case.execute(
                         game_id=game_id,
                         player_id=player_id,
@@ -169,7 +176,14 @@ async def game_websocket(
                         },
                     )
 
-                    cleanup_game(game_id)
+                    cleanup_game(
+                        game_id=game_id,
+                    )
+
+                    connection_manager.cleanup_game(
+                        room_code=room_code,
+                        game_id=game_id,
+                    )
 
                 except ValueError as error:
                     await connection_manager.send_to_player(

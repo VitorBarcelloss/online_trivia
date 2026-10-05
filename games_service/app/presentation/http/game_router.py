@@ -1,7 +1,4 @@
-from fastapi import (
-    APIRouter,
-    HTTPException,
-)
+from fastapi import APIRouter, HTTPException
 
 from app.presentation.game_dependencies import (
     connection_manager,
@@ -96,4 +93,73 @@ async def get_game(
         "ranking": build_ranking(game),
         "question_time": game.question_time,
         "show_ranking": game.show_ranking,
+    }
+
+
+@router.get("/{game_id}/review")
+async def get_game_review(
+    game_id: str,
+):
+    game = await game_repository.get(
+        game_id,
+    )
+
+    if not game:
+        raise HTTPException(
+            status_code=404,
+            detail="Game not found.",
+        )
+
+    review = []
+
+    for question in game.questions:
+        question_answers = [
+            answer
+            for answer in game.answers
+            if answer.question_id == question.id
+        ]
+
+        answers = []
+
+        for answer in question_answers:
+            player = next(
+                (
+                    player
+                    for player in game.players
+                    if player.user_id == answer.player_id
+                ),
+                None,
+            )
+
+            answers.append(
+                {
+                    "player_id": answer.player_id,
+                    "nickname": (
+                        player.nickname
+                        if player
+                        else answer.player_id
+                    ),
+                    "answer": answer.answer,
+                    "correct": answer.correct,
+                    "answered_at": answer.answered_at,
+                }
+            )
+
+        review.append(
+            {
+                "question_id": question.id,
+                "order": question.order,
+                "statement": question.statement,
+                "options": question.options,
+                "correct_answer": question.correct_answer,
+                "explanation": question.explanation,
+                "answers": answers,
+            }
+        )
+
+    return {
+        "game_id": game.id,
+        "status": game.status,
+        "ranking": build_ranking(game),
+        "questions": review,
     }
