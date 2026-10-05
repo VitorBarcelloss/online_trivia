@@ -1,7 +1,5 @@
 import httpx
 
-from uuid import UUID
-
 from app.application.dtos.room import RoomResponseDTO
 
 
@@ -28,24 +26,3 @@ class RoomClient:
         return RoomResponseDTO(
             **response.json()
         )
-
-    async def start_room_game(
-        self,
-        room_code: str,
-        player_id: UUID,
-    ) -> RoomResponseDTO:
-
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.base_url}/{room_code}/start",
-                params={
-                    "player_id": str(player_id),
-                },
-            )
-
-            response.raise_for_status()
-
-        return RoomResponseDTO(
-            **response.json()
-        )
-

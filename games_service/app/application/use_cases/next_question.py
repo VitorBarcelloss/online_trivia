@@ -1,4 +1,4 @@
-from games_service.app.domain.repositories.game_repository import GameRepository
+from app.domain.repositories.game_repository import GameRepository
 
 
 class NextQuestionUseCase:

@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from games_service.app.domain.entities.player_answer import PlayerAnswer
-from games_service.app.domain.repositories.game_repository import GameRepository
+from app.domain.entities.player_answer import PlayerAnswer
+from app.domain.repositories.game_repository import GameRepository
 
 
 class SubmitAnswerUseCase:

@@ -37,6 +37,8 @@ RUN apt-get update \
 COPY --from=builder /install /usr/local
 
 COPY app ./app
+COPY migrations ./migrations
+COPY alembic.ini .
 
 EXPOSE 8001
 

@@ -4,9 +4,9 @@ import uuid
 from app.infrastructure.clients.room_client import RoomClient
 from app.infrastructure.clients.trivia_client import TriviaClient
 
-from games_service.app.domain.entities.game import Game
-from games_service.app.domain.entities.game_player import GamePlayer
-from games_service.app.domain.repositories.game_repository import GameRepository
+from app.domain.entities.game import Game
+from app.domain.entities.game_player import GamePlayer
+from app.domain.repositories.game_repository import GameRepository
 
 
 class StartGameUseCase:
@@ -27,14 +27,23 @@ class StartGameUseCase:
         player_id: uuid.UUID,
     ) -> Game:
 
-        room = await self.room_client.start_room_game(
+        room = await self.room_client.get_room(
             room_code=room_code,
-            player_id=player_id,
         )
 
         if not room:
             raise ValueError(
                 "Room not found."
+            )
+
+        if room.status != "IN_PROGRESS":
+            raise ValueError(
+                "Room has not been started."
+            )
+
+        if str(room.host_id) != str(player_id):
+            raise ValueError(
+                "Only the host can start the game."
             )
 
         existing_game = await self.game_repository.get_by_room_id(

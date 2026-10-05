@@ -13,6 +13,10 @@ class Settings(BaseSettings):
         "amqp://guest:guest@rabbitmq:5672/"
     )
 
+    game_service_url: str = (
+        "http://game-service:8003/games"
+    )
+
     room_code_length: int = 6
     room_code_alphabet: str = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     room_ttl: int = 3600

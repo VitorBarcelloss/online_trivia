@@ -2,6 +2,7 @@ import hashlib
 import json
 from uuid import UUID, uuid4
 
+from app.core.config import settings
 from app.core.exceptions import RoomErrorMessage, RoomException
 from app.core.security import Security
 from app.dtos.room import (
@@ -12,6 +13,7 @@ from app.dtos.room import (
 )
 from app.models.room import Room, RoomStatus
 from app.repositories.room_repository import RoomRepository
+from app.infrastructure.clients.game_client import GameClient
 from app.infrastructure.messaging.rabbitmq_publisher import (
     publish_player_joined,
     publish_player_left,
@@ -26,6 +28,9 @@ class RoomService:
     ) -> None:
         self.room_repository = room_repository
         self.security = Security()
+        self.game_client = GameClient(
+            base_url=settings.game_service_url,
+        )
 
     async def create_room_service(
         self,
@@ -241,7 +246,27 @@ class RoomService:
                 RoomErrorMessage.ROOM_UPDATE_FAILED
             )
 
-        return self.create_room_response_dto(room)
+        try:
+            game_id = await self.game_client.start_game(
+                room_code=room_code,
+                player_id=str(player_id),
+            )
+
+        except Exception as error:
+            room.status = RoomStatus.WAITING
+
+            await self.room_repository.update_room(
+                room
+            )
+
+            raise RoomException(
+                RoomErrorMessage.ROOM_UPDATE_FAILED
+            ) from error
+
+        return self.create_room_response_dto(
+            room,
+            game_id=game_id,
+        )
 
     async def delete_room_service(
         self,
@@ -375,6 +400,7 @@ class RoomService:
     @staticmethod
     def create_room_response_dto(
         room: Room,
+        game_id: str | None = None,
     ) -> RoomResponseDTO:
 
         return RoomResponseDTO(
@@ -389,5 +415,5 @@ class RoomService:
             show_ranking=room.show_ranking,
             status=room.status,
             players=room.players,
+            game_id=game_id,
         )
-

@@ -66,7 +66,11 @@ class QuestionPackageService:
                     }
                     for alternative in question.alternatives
                 ],
-                correct_answer=question.correct_answer,
+                correct_answer=next(
+                    alternative.text
+                    for alternative in question.alternatives
+                    if alternative.is_correct
+                    ),
                 explanation=question.explanation
             )
             for question in questions
